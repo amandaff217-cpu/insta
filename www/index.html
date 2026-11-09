@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>InstaSim Asia</title>
+  <link href="https://googleapis.com" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: #fafafa; color: #262626; padding-bottom: 60px; overflow-x: hidden; }
+    
+    /* Header */
+    header { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #dbdbdb; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 100; }
+    .logo { font-family: 'Grand Hotel', cursive; font-size: 28px; color: #000; }
+    .header-right { display: flex; align-items: center; gap: 15px; }
+    .fame-badge { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: #fff; padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: 700; }
+    .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; position: relative; }
+    .notif-dot { position: absolute; top: 0; right: -2px; width: 8px; height: 8px; background: #ed4956; border-radius: 50%; }
+
+    /* Stories Bar */
+    .stories-bar { display: flex; gap: 12px; padding: 12px 15px; background: #fff; border-bottom: 1px solid #dbdbdb; overflow-x: auto; scrollbar-width: none; }
+    .stories-bar::-webkit-scrollbar { display: none; }
+    .story-item { display: flex; flex-direction: column; align-items: center; width: 66px; flex-shrink: 0; cursor: pointer; }
+    .story-ring { width: 62px; height: 62px; border-radius: 50%; padding: 2px; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+    .story-ring.seen { background: #dbdbdb; }
+    .story-ring img { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; object-fit: cover; }
+    .story-name { font-size: 11px; margin-top: 4px; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Feed */
+    .post { background: #fff; border-bottom: 1px solid #dbdbdb; margin-bottom: 10px; }
+    .post-header { display: flex; align-items: center; padding: 10px 12px; gap: 10px; cursor: pointer; }
+    .post-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+    .post-user-info { display: flex; flex-direction: column; }
+    .username-row { display: flex; align-items: center; gap: 4px; font-weight: 600; font-size: 13px; }
+    .verified { color: #0095f6; font-size: 12px; }
+    .location { font-size: 11px; color: #8e8e8e; }
+    .post-img { width: 100%; aspect-ratio: 4/5; object-fit: cover; background: #efefef; }
+    .post-actions { padding: 10px 12px 4px; display: flex; gap: 15px; font-size: 22px; }
+    .post-likes { padding: 0 12px; font-weight: 600; font-size: 13px; }
+    .post-caption { padding: 4px 12px 12px; font-size: 13px; }
+
+    /* Bottom Nav */
+    nav { position: fixed; bottom: 0; width: 100%; height: 50px; background: #fff; border-top: 1px solid #dbdbdb; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+    nav button { background: none; border: none; font-size: 22px; cursor: pointer; color: #262626; }
+
+    /* Views */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* Explore */
+    .search-box { padding: 10px; background: #fff; border-bottom: 1px solid #dbdbdb; }
+    .search-box input { width: 100%; padding: 8px 12px; border-radius: 8px; border: none; background: #efefef; font-size: 14px; }
+    .explore-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+    .explore-grid img { width: 100%; aspect-ratio: 1/1; object-fit: cover; cursor: pointer; }
+
+    /* Profile */
+    .profile-header { padding: 16px; background: #fff; border-bottom: 1px solid #dbdbdb; }
+    .profile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .profile-pic { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; }
+    .profile-stats { display: flex; gap: 20px; text-align: center; }
+    .stat-num { font-weight: 700; font-size: 16px; display: block; cursor: pointer; }
+    .stat-label { font-size: 12px; color: #8e8e8e; }
+    .profile-bio { font-size: 13px; margin-bottom: 12px; }
+    .profile-btns { display: flex; gap: 8px; }
+    .btn { flex: 1; padding: 7px; border-radius: 8px; border: none; font-weight: 600; font-size: 13px; cursor: pointer; }
+    .btn-primary { background: #0095f6; color: #fff; }
+    .btn-secondary { background: #efefef; color: #000; }
+
+    /* Story Viewer Modal */
+    #story-modal { display: none; position: fixed; inset: 0; background: #000; z-index: 200; flex-direction: column; }
+    .progress-container { display: flex; gap: 4px; padding: 10px 8px; }
+    .progress-bar { flex: 1; height: 2px; background: rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #fff; width: 0%; }
+    .story-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; color: #fff; }
+    .story-content { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; }
+    .story-content img { width: 100%; height: 100%; object-fit: cover; }
+    .tap-left, .tap-right { position: absolute; top: 0; bottom: 0; width: 40%; }
+    .tap-left { left: 0; } .tap-right { right: 0; }
+
+    /* Chat Modal */
+    #chat-modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 150; flex-direction: column; }
+    .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .msg { max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 14px; }
+    .msg.me { align-self: flex-end; background: #0095f6; color: #fff; }
+    .msg.them { align-self: flex-start; background: #efefef; color: #000; }
+    .msg img { max-width: 100%; border-radius: 12px; margin-top: 4px; }
+    .typing { font-size: 12px; color: #8e8e8e; padding: 0 15px 5px; display: none; }
+    .chat-input { display: flex; padding: 10px; border-top: 1px solid #dbdbdb; gap: 8px; }
+    .chat-input input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #dbdbdb; }
+
+    /* Follow List Modal */
+    #list-modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 160; flex-direction: column; }
+    .list-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-bottom: 1px solid #efefef; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">Instagram</div>
+    <div class="header-right">
+      <div class="fame-badge">⭐ Fama: <span id="fame-score">120</span></div>
+      <button class="icon-btn" onclick="openNotifications()">❤️<span class="notif-dot" id="notif-dot"></span></button>
+      <button class="icon-btn" onclick="openChatList()">💬</button>
+    </div>
+  </header>
+
+  <!-- Feed View -->
+  <div id="view-feed" class="view active">
+    <div class="stories-bar" id="stories-bar"></div>
+    <div id="feed-container"></div>
+  </div>
+
+  <!-- Explore View -->
+  <div id="view-explore" class="view">
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="Buscar por nome ou @username..." oninput="filterExplore()">
+    </div>
+    <div class="explore-grid" id="explore-grid"></div>
+  </div>
+
+  <!-- Profile View -->
+  <div id="view-profile" class="view"></div>
+
+  <!-- Bottom Navigation -->
+  <nav>
+    <button onclick="switchView('feed')">🏠</button>
+    <button onclick="switchView('explore')">🔍</button>
+    <button onclick="createPost()">➕</button>
+    <button onclick="openMyProfile()">👤</button>
+  </nav>
+
+  <!-- Story Viewer -->
+  <div id="story-modal">
+    <div class="progress-container" id="story-progress"></div>
+    <div class="story-header">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <img id="story-user-pic" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+        <span id="story-username" style="font-weight:600;font-size:14px;"></span>
+      </div>
+      <button onclick="closeStory()" style="background:none;border:none;color:#fff;font-size:22px;">✕</button>
+    </div>
+    <div class="story-content">
+      <img id="story-media">
+      <div class="tap-left" onclick="prevStory()"></div>
+      <div class="tap-right" onclick="nextStory()"></div>
+    </div>
+  </div>
+
+  <!-- Chat Modal -->
+  <div id="chat-modal">
+    <header>
+      <button onclick="closeChat()" style="background:none;border:none;font-size:20px;">←</button>
+      <div style="font-weight:600;" id="chat-title">Chat</div>
+      <div style="font-size:12px;color:#0095f6;" id="rel-level">Nível 1</div>
+    </header>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="typing" id="typing-indicator">Digitando...</div>
+    <div class="chat-input">
+      <input type="text" id="msg-input" placeholder="Mensagem...">
+      <button onclick="sendMessage()" class="btn btn-primary" style="flex:0 0 70px;">Enviar</button>
+    </div>
+  </div>
+
+  <!-- Followers/Following List Modal -->
+  <div id="list-modal">
+    <header>
+      <button onclick="document.getElementById('list-modal').style.display='none'" style="background:none;border:none;font-size:20px;">←</button>
+      <div style="font-weight:600;" id="list-title">Seguidores</div>
+      <div></div>
+    </header>
+    <div id="list-content" style="overflow-y:auto;flex:1;"></div>
+  </div>
+
+  <script>
+    // Banco de Dados de 60 Usuários Asiáticos (60% Homens, 40% Mulheres)
+const maleNames = ["Kenji", "Min-jun", "Haruto", "Seo-jun", "Wei", "Jin", "Ren", "Do-hyun", "Kaito", "Arthit", "Hiroshi", "Jae-won", "Chen", "Taro", "Eun-woo", "Niran", "Riku", "Ji-hoon", "Lucas", "Sora", "Yuto", "Hyun-woo", "Ming", "Daiki", "Sang-hoon", "Kiet", "Shin", "Tae-hyung", "Hao", "Akira", "Jun-ho", "Boon", "Koji", "Woo-bin", "Li", "Masato"];
+const femaleNames = ["Sakura", "Ji-eun", "Mei", "Yuna", "Hana", "Soo-jin", "Lin", "Aoi", "Ploy", "Mina", "Emi", "Chae-won", "Xiu", "Rin", "Nari", "Mali", "Yui", "Da-hyun", "Jing", "Kaori", "Min-ji", "Somsri", "Ayaka", "Ha-eun"];
+const cities = ["Tóquio, Japão", "Seul, Coreia do Sul", "Xangai, China", "Bangkok, Tailândia", "Osaka, Japão", "Busan, Coreia do Sul", "Taipei, Taiwan", "Singapura"];
+const personalities = ["Romântico", "Fitness", "Artístico", "Profissional", "Engraçado"];
+let fame = 120;
+let users = [];
+let currentChatUser = null;
+let chatHistory = {};
+let relationship = {};
+// Gerar 60 usuários
+for (let i = 0; i < 60; i++) {
+const isMale = i < 36; // 60% homens (36), 40% mulheres (24)
+const name = isMale ? maleNames[i] : femaleNames[i - 36];
+const age = 21 + (i % 15); // 21 a 35 anos
+const city = cities[i % cities.length];
+const personality = personalities[i % personalities.length];
+const verified = i % 4 === 0;
+// Fotos via Unsplash Source / RandomUser / Picsum estilizado
+const genderTag = isMale ? "asian+man+model" : "asian+woman+model";
+const avatar = https://unsplash.com{isMale ? '1506794778202-cad84cf45f1d' : '1534528741775-53994a69daeb'}?auto=format&fit=crop&w=400&q=80&sig=${i};
+const postImg = https://picsum.photos{i}/600/750;
+users.push({
+id: i,
+name: ${name} (${age}),
+username: ${name.toLowerCase().replace('-', '')}_${age},
+isMale,
+age,
+city,
+personality,
+verified,
+avatar: https://dicebear.com{name}${i}&backgroundColor=b6e3f4,c0aede,d1d4f9, // Fallback seguro caso Unsplash limite requisições
+photo: postImg,
+followers: [],
+following: [],
+isFollowingMe: i % 3 === 0,
+amIFollowing: i < 10,
+storySeen: false
+});
+relationship[i] = 1;
+chatHistory[i] = [];
+}
+// Popular conexões entre os 60 usuários
+users.forEach(u => {
+u.followers = users.filter(x => x.id !== u.id && (x.id + u.id) % 5 === 0).map(x => x.id);
+u.following = users.filter(x => x.id !== u.id && (x.id + u.id) % 4 === 0).map(x => x.id);
+});
+function addFame(pts) {
+fame += pts;
+document.getElementById('fame-score').innerText = fame;
+}
+// Render Stories
+function renderStories() {
+const bar = document.getElementById('stories-bar');
+bar.innerHTML = users.slice(0, 20).map(u => <div class="story-item" onclick="openStory(${u.id})"> <div class="story-ring ${u.storySeen ? 'seen' : ''}"> <img src="${u.photo}"> </div> <span class="story-name">${u.username}</span> </div>).join('');
+}
+// Render Feed
+function renderFeed() {
+const feed = document.getElementById('feed-container');
+feed.innerHTML = users.slice(0, 25).map(u => <div class="post"> <div class="post-header" onclick="openProfile(${u.id})"> <img class="post-avatar" src="${u.photo}"> <div class="post-user-info"> <div class="username-row">${u.username} ${u.verified ? '<span class="verified">✓</span>' : ''}</div> <div class="location">${u.city}</div> </div> </div> <img class="post-img" src="${u.photo}" ondblclick="likePost(this)"> <div class="post-actions"> <span onclick="likePost(this)" style="cursor:pointer">🤍</span> <span onclick="openChat(${u.id})" style="cursor:pointer">💬</span> </div> <div class="post-likes">${120 + u.id * 17} curtidas</div> <div class="post-caption"><b>${u.username}</b> Aproveitando o dia em ${u.city.split(',')[0]}! ✨ #${u.personality}</div> </div>).join('');
+}
+function likePost(el) {
+addFame(5);
+alert("Você curtiu o post! +5 de Fama ⭐");
+}
+// Story Viewer Logic
+let currentStoryIdx = 0;
+let storyTimer = null;
+function openStory(userId) {
+currentStoryIdx = userId;
+document.getElementById('story-modal').style.display = 'flex';
+showStorySlide();
+}
+function showStorySlide() {
+clearInterval(storyTimer);
+if (currentStoryIdx >= 20) { closeStory(); return; }
+const u = users[currentStoryIdx];
+u.storySeen = true;
+renderStories();
+document.getElementById('story-user-pic').src = u.photo;
+document.getElementById('story-username').innerText = ${u.username} ${u.verified ? '✓' : ''};
+document.getElementById('story-media').src = https://picsum.photos{u.id}/600/1000;
+const prog = document.getElementById('story-progress');
+prog.innerHTML = <div class="progress-bar"><div class="progress-fill" id="p-fill"></div></div>;
+let width = 0;
+storyTimer = setInterval(() => {
+width += 2;
+document.getElementById('p-fill').style.width = width + '%';
+if (width >= 100) nextStory();
+}, 60);
+}
+function nextStory() { currentStoryIdx++; showStorySlide(); }
+function prevStory() { if (currentStoryIdx > 0) currentStoryIdx--; showStorySlide(); }
+function closeStory() { clearInterval(storyTimer); document.getElementById('story-modal').style.display = 'none'; }
+// Explore & Search
+function renderExplore(list = users) {
+const grid = document.getElementById('explore-grid');
+grid.innerHTML = list.map(u => <img src="${u.photo}" onclick="openProfile(${u.id})">).join('');
+}
+function filterExplore() {
+const q = document.getElementById('search-input').value.toLowerCase();
+const filtered = users.filter(u => u.name.toLowerCase().includes(q) || u.username.toLowerCase().includes(q));
+renderExplore(filtered);
+}
+// Profile & Clickable Followers/Following
+function openProfile(id) {
+const u = users[id];
+switchView('profile');
+const v = document.getElementById('view-profile');
+v.innerHTML = <div class="profile-header"> <div class="profile-top"> <img class="profile-pic" src="${u.photo}"> <div class="profile-stats"> <div><span class="stat-num">12</span><span class="stat-label">Posts</span></div> <div onclick="openFollowList(${u.id}, 'followers')"><span class="stat-num">${u.followers.length}</span><span class="stat-label">Seguidores</span></div> <div onclick="openFollowList(${u.id}, 'following')"><span class="stat-num">${u.following.length}</span><span class="stat-label">Seguindo</span></div> </div> </div> <div class="profile-bio"> <b>${u.name}</b> ${u.verified ? '<span class="verified">✓</span>' : ''}<br> 📍 ${u.city} • Estilo: ${u.personality} </div> <div class="profile-btns"> <button class="btn ${u.amIFollowing ? 'btn-secondary' : 'btn-primary'}" onclick="toggleFollow(${u.id})"> ${u.amIFollowing ? 'Seguindo' : 'Seguir'} </button> <button class="btn btn-secondary" onclick="openChat(${u.id})">Mensagem</button> </div> </div> <div class="explore-grid"> <img src="${u.photo}"><img src="https://picsum.photos{u.id}/400"><img src="https://picsum.photos{u.id}/400"> </div>;
+}
+function toggleFollow(id) {
+users[id].amIFollowing = !users[id].amIFollowing;
+if (users[id].amIFollowing) addFame(10);
+openProfile(id);
+}
+function openFollowList(userId, type) {
+const u = users[userId];
+const ids = type === 'followers' ? u.followers : u.following;
+document.getElementById('list-title').innerText = type === 'followers' ? 'Seguidores' : 'Seguindo';
+const content = document.getElementById('list-content');
+content.innerHTML = ids.map(id => {
+const target = users[id];
+return <div class="list-item"> <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="document.getElementById('list-modal').style.display='none';openProfile(${target.id})"> <img src="${target.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;"> <div> <div style="font-weight:600;font-size:13px;">${target.username} ${target.verified ? '✓' : ''}</div> <div style="font-size:11px;color:#8e8e8e;">${target.name}</div> </div> </div> <button class="btn ${target.amIFollowing ? 'btn-secondary' : 'btn-primary'}" style="flex:0 0 90px;" onclick="targetToggleFollow(${target.id}, ${userId}, '${type}')"> ${target.amIFollowing ? 'Seguindo' : 'Seguir'} </button> </div>;
+}).join('');
+document.getElementById('list-modal').style.display = 'flex';
+}
+function targetToggleFollow(targetId, originId, type) {
+users[targetId].amIFollowing = !users[targetId].amIFollowing;
+openFollowList(originId, type);
+}
+// Realistic Chat System
+function openChat(id) {
+currentChatUser = users[id];
+document.getElementById('chat-title').innerText = ${currentChatUser.username} (${currentChatUser.personality});
+document.getElementById('rel-level').innerText = Relação Nv.${relationship[id]};
+document.getElementById('chat-modal').style.display = 'flex';
+renderMessages();
+}
+function closeChat() { document.getElementById('chat-modal').style.display = 'none'; }
+function renderMessages() {
+const box = document.getElementById('chat-messages');
+box.innerHTML = chatHistory[currentChatUser.id].map(m => <div class="msg ${m.sender}"> ${m.text} ${m.img ?: ''} </div>).join('');
+box.scrollTop = box.scrollHeight;
+}
+function sendMessage() {
+const input = document.getElementById('msg-input');
+const text = input.value.trim();
+if (!text) return;
+const id = currentChatUser.id;
+chatHistory[id].push({ sender: 'me', text });
+input.value = '';
+renderMessages();
+// Indicador digitando + tempo variável
+const typing = document.getElementById('typing-indicator');
+typing.style.display = 'block';
+const delay = 1200 + Math.random() * 2000;
+setTimeout(() => {
+typing.style.display = 'none';
+relationship[id]++;
+addFame(15);
+document.getElementById('rel-level').innerText = Relação Nv.${relationship[id]};
+const replies = {
+"Romântico": ["Você sempre sabe como alegrar meu dia ❤️", "Estava pensando em você agora mesmo...", "Quando vamos nos encontrar em " + currentChatUser.city.split(',')[0] + "?"],
+"Fitness": ["Acabei de sair da academia! 💪 E você, treinou hoje?", "Foco total na dieta e nos treinos!", "Bora correr no parque qualquer dia desses?"],
+"Artístico": ["Estava ouvindo música e desenhando agora 🎨", "A luz aqui em " + currentChatUser.city.split(',')[0] + " está incrível hoje.", "Você tem uma vibe muito inspiradora."],
+"Profissional": ["Dia corrido no escritório, mas sempre arrumo tempo para você.", "Tenho uma reunião já já, mas adorei sua mensagem.", "Admiro pessoas focadas como você."],
+"Engraçado": ["Hahaha você não existe! 😂", "Quase derrubei meu café rindo disso!", "Melhor papo do meu dia, sem dúvidas!"]
+};
+const pool = replies[currentChatUser.personality];
+const replyText = pool[relationship[id] % pool.length];
+// Envia foto exclusiva quando relacionamento >= 3
+const sendPhoto = relationship[id] >= 3 && relationship[id] % 2 === 1;
+chatHistory[id].push({
+sender: 'them',
+text: replyText,
+img: sendPhoto ? https://picsum.photos{id}${relationship[id]}/400/500 : null
+});
+renderMessages();
+}, delay);
+}
+function switchView(name) {
+document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+document.getElementById('view-' + name).classList.add('active');
+}
+function openNotifications() {
+document.getElementById('notif-dot').style.display = 'none';
+alert("Notificações:\n• kenji_24 começou a seguir você.\n• sakura_22 curtiu sua foto.\n• minjun_27 enviou uma mensagem.");
+}
+function openChatList() { openChat(0); }
+function createPost() { addFame(25); alert("Nova foto publicada! Você ganhou +25 de Fama ⭐"); }
+function openMyProfile() { openProfile(0); }
+renderStories();
+renderFeed();
+renderExplore();
